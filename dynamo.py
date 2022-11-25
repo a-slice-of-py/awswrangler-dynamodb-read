@@ -42,10 +42,10 @@ def handle_boto3_client_error(func):
 @handle_boto3_client_error
 def _read_items(table: TableResource,
                 boto3_session: Optional[boto3.Session] = None,
-                keys: Optional[Sequence[Mapping[str, Any]]] = None,
                 **kwargs
                 ) -> Sequence:
     client = _utils.client(service_name='dynamodb', session=boto3_session)
+    keys = kwargs.pop('Keys', None)
     if keys is not None:
         if len(keys) == 1:
             logger.debug('get_item')
@@ -95,8 +95,12 @@ def read_items(*,
                sort_values: Optional[Sequence[Any]] = None,
                filter_expression: Optional[ConditionBase] = None,
                key_condition_expression: Optional[ConditionBase] = None,
-               columns: List = [],
+               expression_attribute_names: Optional[Mapping] = None,
+               expression_attribute_values: Optional[Mapping] = None,
+               consistent: bool = False,
+               columns: Optional[Sequence] = None,
                allow_full_scan: bool = False,  # security gate, prevents unwanted full scan
+               max_items_evaluated: Optional[int] = None,
                boto3_session: Optional[boto3.Session] = None
                ) -> Sequence:
 
@@ -123,26 +127,31 @@ def read_items(*,
             raise ValueError('Partition and sort values must have the same length.')
 
     # Build kwargs shared by read methods
-    kwargs = {}
+    kwargs = {
+        'ConsistentRead': consistent
+    }
 
-    projection_expression = ', '.join(columns)
-
-    if projection_expression:
-        kwargs['ProjectionExpression'] = projection_expression
-    if key_condition_expression is not None:
-        kwargs['KeyConditionExpression'] = key_condition_expression
-    if filter_expression is not None:
-        kwargs['FilterExpression'] = filter_expression
-
-    # Handle read requests based on received kwargs
     if partition_values is not None:
         if sort_key is None:
             keys = [{partition_key: pv} for pv in partition_values]
         else:
             ensure_coherency()
             keys = [{partition_key: pv, sort_key: sv} for pv, sv in zip(partition_values, sort_values)]
-        items = _read_items(table, boto3_session, keys, **kwargs)
-    elif ('KeyConditionExpression' in kwargs) or ('FilterExpression' in kwargs) or allow_full_scan:
+        kwargs['Keys'] = keys
+    if key_condition_expression is not None:
+        kwargs['KeyConditionExpression'] = key_condition_expression
+    if filter_expression is not None:
+        kwargs['FilterExpression'] = filter_expression
+    if columns is not None:
+        kwargs['ProjectionExpression'] = ', '.join(columns)
+    if expression_attribute_names is not None:
+        kwargs['ExpressionAttributeNames'] = expression_attribute_names
+    if expression_attribute_values is not None:
+        kwargs['ExpressionAttributeValues'] = expression_attribute_values
+    if max_items_evaluated is not None:
+        kwargs['Limit'] = max_items_evaluated
+        
+    if ('Keys' in kwargs) or ('KeyConditionExpression' in kwargs) or ('FilterExpression' in kwargs) or allow_full_scan or max_items_evaluated:
         items = _read_items(table, boto3_session, **kwargs)
     else:
         raise ValueError(
