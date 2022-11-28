@@ -231,6 +231,7 @@ def read_items(
     Reading items matching a KeyConditionExpression expressed with boto3.dynamodb.conditions.Key
 
     >>> import awswrangler as wr
+    >>> from boto3.dynamodb.conditions import Key
     >>> df = wr.dynamodb.read_items(
     ...     table_name='my-table',
     ...     key_condition_expression=Key('key_1').eq('val_1') and Key('key_2').eq('val_2')
@@ -248,6 +249,7 @@ def read_items(
     Reading items matching a FilterExpression expressed with boto3.dynamodb.conditions.Attr
 
     >>> import awswrangler as wr
+    >>> from boto3.dynamodb.conditions import Attr
     >>> df = wr.dynamodb.read_items(
     ...     table_name='my-table',
     ...     filter_expression=Attr('my_attr').eq('this-value')
