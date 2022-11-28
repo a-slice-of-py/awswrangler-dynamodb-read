@@ -196,6 +196,82 @@ def read_items(
     -------
     pd.DataFrame
         A Dataframe containing the retrieved items.
+
+    Examples
+    --------
+    Reading 5 random items from a table
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(table_name='my-table', max_items_evaluated=5)
+
+    Strongly-consistent reading of a given partition value from a table
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(table_name='my-table', partition_values=['my-value'], consistent=True)
+
+    Reading items pairwise-identified by partition and sort values, from a table with a composite primary key
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(
+    ...     table_name='my-table',
+    ...     partition_values=['pv_1', 'pv_2'],
+    ...     sort_values=['sv_1', 'sv_2']
+    ... )
+
+    Reading items while retaining only specified attributes
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(table_name='my-table', partition_values=['my-value'], columns=['col_1', 'col_2'])
+
+    Reading all items from a table explicitly allowing full scan
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(table_name='my-table', allow_full_scan=True)
+
+    Reading items matching a KeyConditionExpression expressed with boto3.dynamodb.conditions.Key
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(
+    ...     table_name='my-table',
+    ...     key_condition_expression=Key('key_1').eq('val_1') and Key('key_2').eq('val_2')
+    ... )
+
+    Same as above, but with KeyConditionExpression as string
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(
+    ...     table_name='my-table',
+    ...     key_condition_expression='key_1 = :v1 and key_2 = :v2',
+    ...     expression_attribute_values={':v1': 'val_1', ':v2': 'val_2'},
+    ... )
+
+    Reading items matching a FilterExpression expressed with boto3.dynamodb.conditions.Attr
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(
+    ...     table_name='my-table',
+    ...     filter_expression=Attr('my_attr').eq('this-value')
+    ... )
+
+    Same as above, but with FilterExpression as string
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(
+    ...     table_name='my-table',
+    ...     filter_expression='my_attr = :v',
+    ...     expression_attribute_values={':v': 'this-value'}
+    ... )
+
+    Reading items involving an attribute which collides with DynamoDB reserved keywords
+
+    >>> import awswrangler as wr
+    >>> df = wr.dynamodb.read_items(
+    ...     table_name='my-table',
+    ...     filter_expression='#operator = :v',
+    ...     expression_attribute_names={'#operator': 'operator'},
+    ...     expression_attribute_values={':v': 'this-value'}
+    ... )
+
     """
     # Extract key schema
     table_key_schema = wr.dynamodb.get_table(
