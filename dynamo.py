@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Callable, Mapping, Optional, Sequence, Union
 
 import awswrangler as wr
 import boto3
@@ -14,10 +14,14 @@ HANDLED_KWARGS = ("ProjectionExpression", "KeyConditionExpression", "FilterExpre
 def get_invalid_kwarg(msg: str) -> Optional[str]:
     """Detect which kwarg contains reserved keywords based on given error message.
 
-    Args:
-        msg (str): botocore client error message.
+    Parameters
+    ----------
+    msg : str
+        Botocore client error message.
 
-    Returns:
+    Returns
+    -------
+    str, optional
         Detected invalid kwarg if any, None otherwise.
     """
     for kwarg in HANDLED_KWARGS:
@@ -73,11 +77,16 @@ def _read_items(
 
     This function set the optimal reading strategy based on the received kwargs.
 
-    Args:
-        table_name (str): DynamoDB table name.
-        boto3_session (Optional[boto3.Session], optional): Boto3 Session. Defaults to None (the default boto3 Session will be used).
+    Parameters
+    ----------
+    table_name : str
+        DynamoDB table name.
+    boto3_session : boto3.Session, optional
+        Boto3 Session. Defaults to None (the default boto3 Session will be used).
 
-    Returns:
+    Returns
+    -------
+    Sequence
         Retrieved items.
     """
     # Get DynamoDB resource and Table instance
@@ -130,8 +139,8 @@ def read_items(
     table_name: str,
     partition_values: Optional[Sequence[Any]] = None,
     sort_values: Optional[Sequence[Any]] = None,
-    filter_expression: Optional[ConditionBase] = None,
-    key_condition_expression: Optional[ConditionBase] = None,
+    filter_expression: Optional[Union[ConditionBase, str]] = None,
+    key_condition_expression: Optional[Union[ConditionBase, str]] = None,
     expression_attribute_names: Optional[Mapping] = None,
     expression_attribute_values: Optional[Mapping] = None,
     consistent: bool = False,
@@ -149,26 +158,43 @@ def read_items(
     Under the hood, it wraps all the four available read actions: get_item, batch_get_item,
     query and scan.
 
-    Args:
-        table_name (str): DynamoDB table name.
-        partition_values (Optional[Sequence[Any]], optional): partition key values to retrieve. Defaults to None.
-        sort_values (Optional[Sequence[Any]], optional): sort key values to retrieve. Defaults to None.
-        filter_expression (Optional[ConditionBase], optional): filter expression made of boto3.dynamodb.conditions.Attr conditions. Defaults to None.
-        key_condition_expression (Optional[ConditionBase], optional): key condition expression made of boto3.dynamodb.conditions.Key conditions. Defaults to None.
-        expression_attribute_names (Optional[Mapping], optional): mapping of placeholder and target attributes. Defaults to None.
-        expression_attribute_values (Optional[Mapping], optional): mapping of placeholder and target values. Defaults to None.
-        consistent (bool, optional): if True, ensure that the performed read operation is strongly consistent, otherwise eventually consistent. Defaults to False.
-        columns (Optional[Sequence], optional): attributes to retain in the returned items. Defaults to None (all attributes).
-        allow_full_scan (bool, optional): if True, allow full table scan without any filtering. Defaults to False.
-        max_items_evaluated (Optional[int], optional): limit the number of items evaluated in case of query or scan operations. Defaults to None (all matching items).
-        boto3_session (Optional[boto3.Session], optional): Boto3 Session. Defaults to None (the default boto3 Session will be used).
+    Parameters
+    ----------
+    table_name : str
+        DynamoDB table name.
+    partition_values : Sequence[Any], optional
+        Partition key values to retrieve. Defaults to None.
+    sort_values : Sequence[Any], optional
+        Sort key values to retrieve. Defaults to None.
+    filter_expression : Union[ConditionBase, str], optional
+        Filter expression as string or combinations of boto3.dynamodb.conditions.Attr conditions. Defaults to None.
+    key_condition_expression : Union[ConditionBase, str], optional
+        Key condition expression as string or combinations of boto3.dynamodb.conditions.Key conditions. Defaults to None.
+    expression_attribute_names : Mapping, optional
+        Mapping of placeholder and target attributes. Defaults to None.
+    expression_attribute_values : Mapping, optional
+        Mapping of placeholder and target values. Defaults to None.
+    consistent : bool
+        If True, ensure that the performed read operation is strongly consistent, otherwise eventually consistent. Defaults to False.
+    columns : Sequence, optional
+        Attributes to retain in the returned items. Defaults to None (all attributes).
+    allow_full_scan : bool
+        If True, allow full table scan without any filtering. Defaults to False.
+    max_items_evaluated : int, optional
+        Limit the number of items evaluated in case of query or scan operations. Defaults to None (all matching items).
+    boto3_session : boto3.Session, optional
+        Boto3 Session. Defaults to None (the default boto3 Session will be used).
 
-    Raises:
-        exceptions.InvalidArgumentType: when the specified table has also a sort key but only the partition values are specified.
-        exceptions.InvalidArgumentCombination: when both partition and sort values sequences are specified but they have different lengths, or when provided parameters
-            are not enough informative to proceed with a read operation.
+    Raises
+    ------
+    exceptions.InvalidArgumentType
+        When the specified table has also a sort key but only the partition values are specified.
+    exceptions.InvalidArgumentCombination
+        When both partition and sort values sequences are specified but they have different lengths, or when provided parameters are not enough informative to proceed with a read operation.
 
-    Returns:
+    Returns
+    -------
+    pd.DataFrame
         A Dataframe containing the retrieved items.
     """
     # Extract key schema
