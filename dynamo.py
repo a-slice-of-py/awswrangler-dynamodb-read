@@ -31,7 +31,7 @@ def get_invalid_kwarg(msg: str) -> Optional[str]:
             return kwarg
 
 
-def handle_boto3_client_error(func: Callable) -> Any:
+def handle_reserved_keyword_error(func: Callable) -> Any:
     """Handle automatic replacement of DynamoDB reserved keywords.
 
     For reserved keywords reference: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
@@ -69,7 +69,7 @@ def handle_boto3_client_error(func: Callable) -> Any:
     return wrapper
 
 
-@handle_boto3_client_error
+@handle_reserved_keyword_error
 def _read_items(
     table_name: str, boto3_session: Optional[boto3.Session] = None, **kwargs
 ) -> Sequence:
@@ -295,9 +295,9 @@ def read_items(
 
     # Handy checker
     def ensure_coherency():
-        if sort_values is None:
+        if not sort_values:
             raise exceptions.InvalidArgumentType(
-                f"Argument sort_values cannot be None: table {table_name} has {sort_key} as sort key."
+                f"Kwarg sort_values must be specified: table {table_name} has {sort_key} as sort key."
             )
         elif len(sort_values) != len(partition_values):
             raise exceptions.InvalidArgumentCombination(
@@ -306,7 +306,7 @@ def read_items(
 
     # Build kwargs shared by read methods
     kwargs = {"ConsistentRead": consistent}
-    if partition_values is not None:
+    if partition_values:
         if sort_key is None:
             keys = [{partition_key: pv} for pv in partition_values]
         else:
@@ -316,24 +316,24 @@ def read_items(
                 for pv, sv in zip(partition_values, sort_values)
             ]
         kwargs["Keys"] = keys
-    if key_condition_expression is not None:
+    if key_condition_expression:
         kwargs["KeyConditionExpression"] = key_condition_expression
-    if filter_expression is not None:
+    if filter_expression:
         kwargs["FilterExpression"] = filter_expression
-    if columns is not None:
+    if columns:
         kwargs["ProjectionExpression"] = ", ".join(columns)
-    if expression_attribute_names is not None:
+    if expression_attribute_names:
         kwargs["ExpressionAttributeNames"] = expression_attribute_names
-    if expression_attribute_values is not None:
+    if expression_attribute_values:
         kwargs["ExpressionAttributeValues"] = expression_attribute_values
-    if max_items_evaluated is not None:
+    if max_items_evaluated:
         kwargs["Limit"] = max_items_evaluated
 
     # If kwargs are sufficiently informative, proceed with actual read op
     if (
-        ("Keys" in kwargs)
-        or ("KeyConditionExpression" in kwargs)
-        or ("FilterExpression" in kwargs)
+        partition_values
+        or key_condition_expression
+        or filter_expression
         or allow_full_scan
         or max_items_evaluated
     ):
@@ -341,7 +341,7 @@ def read_items(
     # Raise otherwise
     else:
         raise exceptions.InvalidArgumentCombination(
-            f"Please provide at least one between partition_values, sort_values, filter_expression, allow_full_scan or max_items_evaluated."
+            f"Please provide at least one between partition_values, key_condition_expression, filter_expression, allow_full_scan or max_items_evaluated."
         )
 
     # Enforce DataFrame type
