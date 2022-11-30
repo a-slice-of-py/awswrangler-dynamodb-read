@@ -111,9 +111,9 @@ def _read_items(
         response = resource.batch_get_item(RequestItems={table_name: kwargs})
         items = response.get("Responses", {table_name: []}).get(table_name, [])
         # SEE: handle possible unprocessed keys. As suggested in Boto3 docs,
-        # this approach should involve exponential backoff, but as stated
-        # [here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html#Programming.Errors.RetryAndBackoff)
-        # this should be already managed by AWS SDK itself
+        # this approach should involve exponential backoff, but this should be 
+        # already managed by AWS SDK itself, as stated
+        # [here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html)
         while response["UnprocessedKeys"]:
             kwargs["Keys"] = response["UnprocessedKeys"][table_name]["Keys"]
             response = resource.batch_get_item(RequestItems={table_name: kwargs})
@@ -218,10 +218,14 @@ def read_items(
     ...     sort_values=['sv_1', 'sv_2']
     ... )
 
-    Reading items while retaining only specified attributes
+    Reading items while retaining only specified attributes, automatically handling possible collision with DynamoDB reserved keywords
 
     >>> import awswrangler as wr
-    >>> df = wr.dynamodb.read_items(table_name='my-table', partition_values=['my-value'], columns=['col_1', 'col_2'])
+    >>> df = wr.dynamodb.read_items(
+    ...     table_name='my-table', 
+    ...     partition_values=['my-value'], 
+    ...     columns=['connection', 'other_col'] # connection is a reserved keyword, managed under the hood!
+    ... )
 
     Reading all items from a table explicitly allowing full scan
 
