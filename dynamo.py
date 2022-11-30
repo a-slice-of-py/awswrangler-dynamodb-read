@@ -8,8 +8,6 @@ from awswrangler import _utils, exceptions
 from boto3.dynamodb.conditions import ConditionBase
 from botocore.exceptions import ClientError
 
-HANDLED_KWARGS = ("ProjectionExpression", "KeyConditionExpression", "FilterExpression")
-
 
 def get_invalid_kwarg(msg: str) -> Optional[str]:
     """Detect which kwarg contains reserved keywords based on given error message.
@@ -24,7 +22,7 @@ def get_invalid_kwarg(msg: str) -> Optional[str]:
     str, optional
         Detected invalid kwarg if any, None otherwise.
     """
-    for kwarg in HANDLED_KWARGS:
+    for kwarg in ("ProjectionExpression", "KeyConditionExpression", "FilterExpression"):
         if msg.startswith(
             f"Invalid {kwarg}: Attribute name is a reserved keyword; reserved keyword: "
         ):
@@ -111,7 +109,7 @@ def _read_items(
         response = resource.batch_get_item(RequestItems={table_name: kwargs})
         items = response.get("Responses", {table_name: []}).get(table_name, [])
         # SEE: handle possible unprocessed keys. As suggested in Boto3 docs,
-        # this approach should involve exponential backoff, but this should be 
+        # this approach should involve exponential backoff, but this should be
         # already managed by AWS SDK itself, as stated
         # [here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html)
         while response["UnprocessedKeys"]:
@@ -222,8 +220,8 @@ def read_items(
 
     >>> import awswrangler as wr
     >>> df = wr.dynamodb.read_items(
-    ...     table_name='my-table', 
-    ...     partition_values=['my-value'], 
+    ...     table_name='my-table',
+    ...     partition_values=['my-value'],
     ...     columns=['connection', 'other_col'] # connection is a reserved keyword, managed under the hood!
     ... )
 
