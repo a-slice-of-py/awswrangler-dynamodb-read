@@ -2,7 +2,7 @@
 
 ## A candidate for `wr.dynamodb.read_items`
 
-I recently found myself putting some effort in trying to handle reading items from a DynamoDB table and returning a Pandas Dataframe. Basically, I wanted to abstract some complexity away from available Boto3 read actions, and handle once for all the headache of thinking about keys, query, scan, etc.: since I'm pretty happy with the results, I decided to open-sourcing it here while it's being evaluated as candidate for `wr.dynamodb.read_items`.
+I recently found myself putting some effort in trying to handle reading items from a DynamoDB table and returning a Pandas Dataframe. Basically, I wanted to abstract some complexity away from available Boto3 read actions, and handle once for all the headache of thinking about keys, query, scan, etc.: since I'm pretty happy with the results, I decided to open-sourcing it here while it's being evaluated as candidate for `wr.dynamodb.read_items` in aws/aws-sdk-pandas#895.
 
 Since the code should be auto-consistent, if this won't be included in awswrangler stable codebase it's probable that sooner or later I will decide to package it and publish to pip (I tried to stick to awswrangler best practices as much as I can, so it should be an handy drop-in replacement).
 
