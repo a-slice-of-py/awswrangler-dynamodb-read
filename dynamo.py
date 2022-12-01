@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Any, Callable, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Mapping, Optional, Sequence, Union, List
 
 import awswrangler as wr
 import boto3
@@ -145,8 +145,9 @@ def read_items(
     columns: Optional[Sequence] = None,
     allow_full_scan: bool = False,
     max_items_evaluated: Optional[int] = None,
+    as_dataframe: bool = True,
     boto3_session: Optional[boto3.Session] = None,
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, List, Mapping]:
     """Read items from given DynamoDB table.
 
     This function aims to gracefully handle (some of) the complexity of read actions
@@ -180,6 +181,8 @@ def read_items(
         If True, allow full table scan without any filtering. Defaults to False.
     max_items_evaluated : int, optional
         Limit the number of items evaluated in case of query or scan operations. Defaults to None (all matching items).
+    as_dataframe : bool
+        If True, return items as pd.DataFrame, otherwise as list/dict. Defaults to True.
     boto3_session : boto3.Session, optional
         Boto3 Session. Defaults to None (the default boto3 Session will be used).
 
@@ -192,8 +195,8 @@ def read_items(
 
     Returns
     -------
-    pd.DataFrame
-        A Dataframe containing the retrieved items.
+    Union[pd.DataFrame, List, Mapping]
+        A Dataframe containing the retrieved items, or sequence of raw items or directly the only item retrieved.
 
     Examples
     --------
@@ -346,5 +349,8 @@ def read_items(
             f"Please provide at least one between partition_values, key_condition_expression, filter_expression, allow_full_scan or max_items_evaluated."
         )
 
-    # Enforce DataFrame type
-    return pd.DataFrame(items)
+    # Enforce DataFrame type if requested
+    if as_dataframe:
+        return pd.DataFrame(items)
+    else:
+        return items if len(items) > 1 else items[0]
