@@ -353,4 +353,4 @@ def read_items(
     if as_dataframe:
         return pd.DataFrame(items)
     else:
-        return items if len(items) > 1 else items[0]
+        return items
